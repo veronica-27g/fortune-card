@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星詠み運勢カード</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+JP:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --gold: #d4a843;
+    --gold-light: #f0d078;
+    --gold-pale: #fff8e7;
+    --glass-bg: rgba(255,255,255,0.07);
+    --glass-border: rgba(212,168,67,0.35);
+    --star-bg: #060b1a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: var(--star-bg);
+    font-family: 'Noto Serif JP', serif;
+    color: #f0e8d0;
+    overflow-x: hidden;
+  }
+
+  /* ===== 星空背景 ===== */
+  #starfield {
+    position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: #fff;
+    animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: var(--min-op, 0.2); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+  .shooting {
+    position: absolute;
+    width: 120px; height: 1.5px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.9), transparent);
+    border-radius: 1px;
+    animation: shoot 6s linear infinite;
+    opacity: 0;
+  }
+  @keyframes shoot {
+    0% { transform: translate(-50px,-50px) rotate(-30deg); opacity:0; }
+    5% { opacity:1; }
+    30% { opacity:0; }
+    100% { transform: translate(200vw, 200px) rotate(-30deg); opacity:0; }
+  }
+
+  /* ===== レイアウト ===== */
+  .page-wrap {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 16px 60px;
+  }
+
+  /* ===== ヘッダー ===== */
+  .header {
+    text-align: center; margin-bottom: 40px;
+  }
+  .header-icon {
+    font-size: 2.8rem; display: block; margin-bottom: 6px;
+    filter: drop-shadow(0 0 12px var(--gold));
+  }
+  .header h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    letter-spacing: 0.1em;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold), #a87520);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-shadow: none;
+  }
+  .header p {
+    margin-top: 8px; font-size: 0.78rem;
+    color: rgba(240,232,208,0.55); letter-spacing: 0.12em;
+  }
+
+  /* ===== フォーム ===== */
+  .form-card {
+    width: 100%; max-width: 420px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+    margin-bottom: 36px;
+  }
+  .form-group { margin-bottom: 22px; }
+  label {
+    display: block; font-size: 0.72rem;
+    color: var(--gold-light); letter-spacing: 0.18em;
+    margin-bottom: 8px; text-transform: uppercase;
+  }
+  input[type="text"], input[type="date"] {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(212,168,67,0.3);
+    border-radius: 10px;
+    padding: 13px 16px;
+    color: #f0e8d0;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  input[type="text"]:focus, input[type="date"]:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(212,168,67,0.18);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8) sepia(1) saturate(3) hue-rotate(5deg);
+    cursor: pointer;
+  }
+  .btn-fortune {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, #c9922a, var(--gold), #c9922a);
+    border: none; border-radius: 12px;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem; font-weight: 600;
+    color: #0e0a00;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(212,168,67,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .btn-fortune::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+  .btn-fortune:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(212,168,67,0.5); }
+  .btn-fortune:hover::after { transform: translateX(100%); }
+  .btn-fortune:active { transform: translateY(0); }
+
+  /* ===== 運勢カード ===== */
+  #card-section { display:none; width:100%; max-width:440px; }
+  #card-section.visible {
+    display: block;
+    animation: fadeInUp 0.8s cubic-bezier(0.22,1,0.36,1);
+  }
+  @keyframes fadeInUp {
+    from { opacity:0; transform:translateY(30px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .fortune-card {
+    position: relative;
+    background: linear-gradient(145deg, rgba(10,15,35,0.92), rgba(20,10,45,0.95));
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px);
+    border-radius: 24px;
+    padding: 36px 28px 28px;
+    box-shadow:
+      0 0 0 1px rgba(212,168,67,0.12),
+      0 20px 60px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      0 0 80px rgba(100,50,180,0.12);
+    overflow: hidden;
+  }
+
+  /* 背景オーナメント */
+  .card-bg-circle {
+    position: absolute; border-radius: 50%; pointer-events: none;
+  }
+  .card-bg-circle.c1 {
+    width: 220px; height: 220px;
+    top: -80px; right: -60px;
+    background: radial-gradient(circle, rgba(212,168,67,0.08) 0%, transparent 70%);
+  }
+  .card-bg-circle.c2 {
+    width: 180px; height: 180px;
+    bottom: -60px; left: -50px;
+    background: radial-gradient(circle, rgba(100,60,200,0.12) 0%, transparent 70%);
+  }
+
+  /* カード上部バッジ */
+  .card-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(212,168,67,0.12);
+    border: 1px solid rgba(212,168,67,0.3);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 0.68rem; letter-spacing: 0.2em;
+    color: var(--gold-light);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  /* 名前・日付 */
+  .card-name {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.3rem, 5vw, 1.7rem);
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .card-date {
+    font-size: 0.75rem; color: rgba(240,232,208,0.5);
+    letter-spacing: 0.14em; margin-bottom: 20px;
+  }
+
+  /* 区切り線 */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+    margin: 16px 0; opacity: 0.4;
+  }
+
+  /* メイン星座 */
+  .main-sign {
+    text-align: center; padding: 20px 0 14px;
+  }
+  .sign-emoji {
+    font-size: 3.2rem; display: block; margin-bottom: 8px;
+    filter: drop-shadow(0 0 14px rgba(212,168,67,0.6));
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+  .sign-name {
+    font-size: 1.4rem; font-weight: 600;
+    color: var(--gold-light); letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .sign-keyword {
+    font-size: 0.72rem; color: rgba(240,232,208,0.55);
+    letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  /* 数秘術 */
+  .numerology-row {
+    display: flex; justify-content: center; gap: 12px;
+    margin: 18px 0;
+    flex-wrap: wrap;
+  }
+  .num-pill {
+    background: rgba(212,168,67,0.1);
+    border: 1px solid rgba(212,168,67,0.25);
+    border-radius: 8px; padding: 8px 14px; text-align: center;
+    min-width: 80px;
+  }
+  .num-pill .np-val {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.4rem; color: var(--gold-light);
+    display: block;
+  }
+  .num-pill .np-label {
+    font-size: 0.6rem; letter-spacing: 0.15em;
+    color: rgba(240,232,208,0.45); text-transform: uppercase;
+    display: block; margin-top: 2px;
+  }
+
+  /* 運勢スコア */
+  .score-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin: 16px 0;
+  }
+  .score-item label {
+    color: rgba(240,232,208,0.5);
+    font-size: 0.62rem; letter-spacing: 0.18em;
+    text-transform: uppercase; margin-bottom: 5px;
+  }
+  .score-bar-wrap {
+    height: 5px; background: rgba(255,255,255,0.08);
+    border-radius: 10px; overflow: hidden;
+  }
+  .score-bar {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    box-shadow: 0 0 6px rgba(212,168,67,0.6);
+    transition: width 1.2s cubic-bezier(0.22,1,0.36,1);
+  }
+  .score-val {
+    font-size: 0.7rem; color: var(--gold-light);
+    text-align: right; margin-top: 3px;
+  }
+
+  /* 一言メッセージ */
+  .fortune-msg {
+    background: rgba(255,255,255,0.04);
+    border-left: 2px solid var(--gold);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    margin: 18px 0;
+    font-size: 0.88rem; line-height: 1.75;
+    color: rgba(240,232,208,0.85);
+  }
+
+  /* ラッキーアイテム */
+  .lucky-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 14px;
+  }
+  .lucky-tag {
+    background: rgba(212,168,67,0.08);
+    border: 1px solid rgba(212,168,67,0.2);
+    border-radius: 100px; padding: 4px 12px;
+    font-size: 0.72rem; color: rgba(240,232,208,0.7);
+    letter-spacing: 0.1em;
+  }
+  .lucky-section-label {
+    font-size: 0.62rem; color: rgba(240,232,208,0.4);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin-top: 14px; margin-bottom: 6px;
+  }
+
+  /* 保存ボタン */
+  .btn-save {
+    margin-top: 24px; width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1px solid rgba(212,168,67,0.45);
+    border-radius: 12px;
+    color: var(--gold-light);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.85rem; letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: background 0.3s, box-shadow 0.3s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-save:hover {
+    background: rgba(212,168,67,0.1);
+    box-shadow: 0 0 20px rgba(212,168,67,0.2);
+  }
+
+  /* 再生成リンク */
+  .redo-link {
+    text-align: center; margin-top: 20px;
+    font-size: 0.75rem; color: rgba(240,232,208,0.35);
+    letter-spacing: 0.12em; cursor: pointer;
+    transition: color 0.3s;
+  }
+  .redo-link:hover { color: var(--gold-light); }
+</style>
+</head>
+<body>
+
+<!-- 星空 -->
+<div id="starfield"></div>
+
+<div class="page-wrap">
+  <!-- ヘッダー -->
+  <div class="header">
+    <span class="header-icon">✦</span>
+    <h1>Stellar Fortune</h1>
+    <p>星詠み運勢カード</p>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="form-card">
+    <div class="form-group">
+      <label>お名前</label>
+      <input type="text" id="inp-name" placeholder="例：山田 花子" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label>生年月日</label>
+      <input type="date" id="inp-birth">
+    </div>
+    <button class="btn-fortune" onclick="generate()">✦ 運勢を星に問う ✦</button>
+  </div>
+
+  <!-- 運勢カード -->
+  <div id="card-section">
+    <div class="fortune-card" id="fortune-card">
+      <div class="card-bg-circle c1"></div>
+      <div class="card-bg-circle c2"></div>
+      <div class="card-badge">✦ <span>Stellar Fortune</span> ✦</div>
+      <div class="card-name" id="c-name"></div>
+      <div class="card-date" id="c-date"></div>
+      <div class="divider"></div>
+      <div class="main-sign">
+        <span class="sign-emoji" id="c-emoji"></span>
+        <div class="sign-name" id="c-sign"></div>
+        <div class="sign-keyword" id="c-keyword"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="numerology-row">
+        <div class="num-pill"><span class="np-val" id="c-lifepath"></span><span class="np-label">ライフパス</span></div>
+        <div class="num-pill"><span class="np-val" id="c-destiny"></span><span class="np-label">デスティニー</span></div>
+        <div class="num-pill"><span class="np-val" id="c-daynum"></span><span class="np-label">誕生日数</span></div>
+      </div>
+      <div class="score-row" id="c-scores"></div>
+      <div class="fortune-msg" id="c-msg"></div>
+      <div class="lucky-section-label">Lucky Charms</div>
+      <div class="lucky-row" id="c-lucky"></div>
+      <button class="btn-save" onclick="saveCard()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PNG で保存する
+      </button>
+    </div>
+    <div class="redo-link" onclick="scrollToForm()">▲ 入力し直す</div>
+  </div>
+</div>
+
+<script>
+// ===== 星空生成 =====
+(function(){
+  const sf = document.getElementById('starfield');
+  const N = 160;
+  for(let i=0;i<N;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2.2+0.5;
+    s.style.cssText=`
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${sz}px;height:${sz}px;
+      --dur:${2+Math.random()*4}s;
+      --delay:${Math.random()*5}s;
+      --min-op:${0.1+Math.random()*0.3};
+      opacity:${0.15+Math.random()*0.5};
+    `;
+    sf.appendChild(s);
+  }
+  // 流れ星 3本
+  for(let i=0;i<3;i++){
+    const sh=document.createElement('div');
+    sh.className='shooting';
+    sh.style.cssText=`
+      top:${10+Math.random()*40}%;
+      left:${-10+Math.random()*30}%;
+      animation-delay:${i*2.5+Math.random()*4}s;
+      animation-duration:${5+Math.random()*4}s;
+    `;
+    sf.appendChild(sh);
+  }
+})();
+
+// ===== データ定義 =====
+const ZODIAC = [
+  { name:'山羊座', emoji:'♑', keyword:'AUTHORITY & DISCIPLINE', range:[[12,22],[1,19]] },
+  { name:'水瓶座', emoji:'♒', keyword:'INNOVATION & FREEDOM',  range:[[1,20],[2,18]] },
+  { name:'魚座',   emoji:'♓', keyword:'DREAM & INTUITION',     range:[[2,19],[3,20]] },
+  { name:'牡羊座', emoji:'♈', keyword:'COURAGE & PASSION',     range:[[3,21],[4,19]] },
+  { name:'牡牛座', emoji:'♉', keyword:'STABILITY & LUXURY',    range:[[4,20],[5,20]] },
+  { name:'双子座', emoji:'♊', keyword:'CURIOSITY & DUALITY',   range:[[5,21],[6,20]] },
+  { name:'蟹座',   emoji:'♋', keyword:'NURTURE & EMOTION',     range:[[6,21],[7,22]] },
+  { name:'獅子座', emoji:'♌', keyword:'PRIDE & RADIANCE',      range:[[7,23],[8,22]] },
+  { name:'乙女座', emoji:'♍', keyword:'WISDOM & PRECISION',    range:[[8,23],[9,22]] },
+  { name:'天秤座', emoji:'♎', keyword:'HARMONY & BEAUTY',      range:[[9,23],[10,22]] },
+  { name:'蠍座',   emoji:'♏', keyword:'DEPTH & TRANSFORMATION',range:[[10,23],[11,21]] },
+  { name:'射手座', emoji:'♐', keyword:'ADVENTURE & WISDOM',    range:[[11,22],[12,21]] },
+];
+
+const STAR_SIGNS = [
+  { name:'白虎',   emoji:'🐯', keyword:'PROTECTION & VALOR' },
+  { name:'玄武',   emoji:'🐢', keyword:'LONGEVITY & WISDOM' },
+  { name:'朱雀',   emoji:'🦅', keyword:'REBIRTH & BEAUTY' },
+  { name:'青龍',   emoji:'🐲', keyword:'FORTUNE & POWER' },
+  { name:'北極星', emoji:'⭐', keyword:'GUIDANCE & TRUTH' },
+  { name:'昴宿',   emoji:'✨', keyword:'ILLUMINATION & JOY' },
+  { name:'天狼星', emoji:'🌟', keyword:'AMBITION & BRILLIANCE' },
+  { name:'織女星', emoji:'💫', keyword:'LOVE & CREATIVITY' },
+  { name:'彦星',   emoji:'🌠', keyword:'ROMANCE & DESTINY' },
+];
+
+const LUCKY_COLORS   = ['ゴールド','ディープブルー','ラベンダー','エメラルド','ルビーレッド','パールホワイト','コバルト','アンバー','ローズピンク'];
+const LUCKY_ITEMS    = ['水晶球','月桂樹','羽根ペン','砂時計','星図','薔薇の花','古地図','ラピスラズリ','銀の鍵','翡翠','白玉蘭','燃える蝋燭'];
+const LUCKY_NUMBERS  = [1,2,3,5,7,8,9,11,13,17,21,22,33];
+const LUCKY_DIRS     = ['北','北東','東','南東','南','南西','西','北西'];
+const SCORE_ITEMS    = ['総合運','恋愛運','仕事運','財運','健康運','対人運'];
+
+const MSGS = [
+  n=>`${n}さん、今あなたを包む星の光は類稀なるものを指し示しています。内なる声に従い、一歩を踏み出す時です。`,
+  n=>`宇宙の流れは${n}さんに優しく微笑んでいます。今こそ種を蒔くに最良の季節。大地に根を張り、天へと向かいましょう。`,
+  n=>`${n}さんの魂には、古来より星々が刻み込んだ使命があります。今この瞬間、それが静かに目覚めようとしています。`,
+  n=>`星の配置は${n}さんに変容をもたらします。手放すことを恐れずに。新たな光がその先で待ち受けています。`,
+  n=>`${n}さん、過去の旅路が今日という日を作りました。感謝と覚悟を持って進めば、宇宙はあなたの味方です。`,
+  n=>`深淵の星たちは${n}さんの知られざる才能を知っています。今こそその眠れる力を世界へ解き放つ時です。`,
+  n=>`月の引力が${n}さんの直感を研ぎ澄ませています。論理を超えた場所にこそ、真の答えが宿っています。`,
+  n=>`${n}さんの生命数は今、宇宙の交差点に立っています。出会いと別れの先に、黄金の扉が開かれようとしています。`,
+];
+
+// ===== ユーティリティ =====
+function seededRand(seed){
+  let s=seed;
+  return ()=>{ s=(s*9301+49297)%233280; return s/233280; };
+}
+function pick(arr, r){ return arr[Math.floor(r()*arr.length)]; }
+function pickN(arr, n, r){
+  const a=[...arr]; const res=[];
+  for(let i=0;i<n&&a.length;i++){
+    const idx=Math.floor(r()*a.length);
+    res.push(a.splice(idx,1)[0]);
+  }
+  return res;
+}
+
+function calcLifepath(y,m,d){
+  const s=String(y)+String(m).padStart(2,'0')+String(d).padStart(2,'0');
+  let n=s.split('').reduce((a,c)=>a+parseInt(c),0);
+  while(n>9&&n!==11&&n!==22&&n!==33) n=String(n).split('').reduce((a,c)=>a+parseInt(c),0);
+  return n;
+}
+function calcDestiny(name){
+  const map={あ:1,い:1,う:1,え:1,お:1,ka:2,き:2,く:2,け:2,こ:2};
+  let n=0;
+  for(const c of name){ n+=c.charCodeAt(0)%9||9; }
+  while(n>9&&n!==11&&n!==22&&n!==33) n=String(n).split('').reduce((a,c)=>a+parseInt(c),0);
+  return n;
+}
+function getZodiac(m,d){
+  for(const z of ZODIAC){
+    const [[sm,sd],[em,ed]]=z.range;
+    if((m===sm&&d>=sd)||(m===em&&d<=ed)) return z;
+  }
+  return ZODIAC[0];
+}
+const DAYS_JP=['日','月','火','水','木','金','土'];
+
+// ===== 生成 =====
+function generate(){
+  const name = document.getElementById('inp-name').value.trim();
+  const bdate = document.getElementById('inp-birth').value;
+  if(!name){ alert('お名前を入力してください'); return; }
+  if(!bdate){ alert('生年月日を入力してください'); return; }
+
+  const dt  = new Date(bdate);
+  const y=dt.getFullYear(), m=dt.getMonth()+1, d=dt.getDate();
+  const dow = dt.getDay();
+
+  const lp = calcLifepath(y,m,d);
+  const dn = calcDestiny(name);
+  const daynum = (()=>{let n=d; while(n>9&&n!==11&&n!==22)n=String(n).split('').reduce((a,c)=>a+parseInt(c),0); return n;})();
+
+  // シード: 名前+誕生日+曜日
+  let seed = 0;
+  for(const c of name+bdate+dow) seed += c.charCodeAt(0)*7;
+  seed = (seed * lp * (dn||1) * (daynum||1)) % 999983 + 1;
+  const r = seededRand(seed);
+
+  const zodiac = getZodiac(m,d);
+  // 月+日数から宮宿を決める
+  const starSign = STAR_SIGNS[(m * d * (dow+1)) % STAR_SIGNS.length];
+
+  // スコア (誕生月・日・曜日・数秘で変動)
+  const base = (lp + dn + daynum + dow) % 30;
+  const scores = SCORE_ITEMS.map((item,i)=>{
+    const v = 40 + Math.floor((( (base*(i+1)*7 + m*d*3 + seed%(17+i) )%61)));
+    return { label:item, val:Math.min(99,Math.max(40,v)) };
+  });
+
+  // メッセージ
+  const msgFn = MSGS[(lp+dn+dow) % MSGS.length];
+  const msg = msgFn(name);
+
+  // ラッキー
+  const luckColor  = pick(LUCKY_COLORS, r);
+  const luckItems  = pickN(LUCKY_ITEMS, 3, r);
+  const luckNum    = LUCKY_NUMBERS[Math.floor(r()*LUCKY_NUMBERS.length)];
+  const luckDir    = LUCKY_DIRS[Math.floor(r()*LUCKY_DIRS.length)];
+
+  // --- 描画 ---
+  document.getElementById('c-name').textContent = name;
+  document.getElementById('c-date').textContent =
+    `${y}年${m}月${d}日（${DAYS_JP[dow]}曜日）生まれ`;
+  document.getElementById('c-emoji').textContent   = starSign.emoji;
+  document.getElementById('c-sign').textContent    = `${zodiac.name} × ${starSign.name}`;
+  document.getElementById('c-keyword').textContent = zodiac.keyword;
+  document.getElementById('c-lifepath').textContent= lp;
+  document.getElementById('c-destiny').textContent = dn;
+  document.getElementById('c-daynum').textContent  = daynum;
+  document.getElementById('c-msg').textContent     = msg;
+
+  // スコア
+  const sr = document.getElementById('c-scores');
+  sr.innerHTML = scores.map(s=>`
+    <div class="score-item">
+      <label>${s.label}</label>
+      <div class="score-bar-wrap">
+        <div class="score-bar" style="width:0%" data-val="${s.val}%"></div>
+      </div>
+      <div class="score-val">${s.val}</div>
+    </div>
+  `).join('');
+
+  // ラッキー
+  document.getElementById('c-lucky').innerHTML = [
+    `🎨 ${luckColor}`,
+    ...luckItems.map(i=>`✦ ${i}`),
+    `🔢 ${luckNum}`,
+    `🧭 ${luckDir}`,
+  ].map(t=>`<span class="lucky-tag">${t}</span>`).join('');
+
+  // 表示
+  const sec = document.getElementById('card-section');
+  sec.style.display='block';
+  sec.classList.remove('visible');
+  void sec.offsetWidth;
+  sec.classList.add('visible');
+  sec.scrollIntoView({behavior:'smooth', block:'start'});
+
+  // スコアバーアニメーション
+  setTimeout(()=>{
+    document.querySelectorAll('.score-bar').forEach(b=>{
+      b.style.width = b.dataset.val;
+    });
+  }, 200);
+}
+
+// ===== PNG保存 =====
+async function saveCard(){
+  const card = document.getElementById('fortune-card');
+  const btn  = card.querySelector('.btn-save');
+  btn.style.display = 'none';
+  try {
+    const canvas = await html2canvas(card, {
+      scale: 2.5,
+      backgroundColor: '#060b1a',
+      useCORS: true,
+      logging: false,
+    });
+    const link = document.createElement('a');
+    const name = (document.getElementById('c-name').textContent||'fortune').replace(/\s/g,'');
+    link.download = `stellar_fortune_${name}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('保存に失敗しました。ブラウザの設定をご確認ください。');
+  } finally {
+    btn.style.display = '';
+  }
+}
+
+function scrollToForm(){
+  document.querySelector('.form-card').scrollIntoView({behavior:'smooth'});
+}
+
+// Enterキー対応
+document.addEventListener('keydown', e=>{ if(e.key==='Enter') generate(); });
+</script>
+</body>
+</html>
